@@ -15,3 +15,8 @@ The third adjustment was in `Example2/kubernetes.yml`. There I adjusted all the 
 ## Forth adjustment
 
 The forth adjustment was in `Example2/deployment.yml.j2`. There I just adjusted the slow_machine IP variable
+
+## Fifth adjustment
+
+The fifth adjustment was in `host-sflow.yml.j2`. There I just adjusted the slow_machine IP variable
+
