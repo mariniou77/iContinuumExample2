@@ -43,7 +43,7 @@
     - name: Update /etc/hosts file
       lineinfile:
         path: /etc/hosts
-        line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+        line: "{{ hostvars[item]['internal_ip'] }} {{ item }}"
         state: present
       with_items: "{{ groups['kubernetes'] }}"
       become: true
@@ -211,7 +211,7 @@
 
     - name: Delete OVS bridge br1 if it exists
       become: yes
-      shell: ovs-vsctl del-br br1
+      shell: ovs-vsctl --if-exists del-br br1
       ignore_errors: true
 
     - name: Create OVS bridge br1
@@ -224,7 +224,7 @@
 
     - name: Add port tap0 to bridge br1
       become: yes
-      shell: ovs-vsctl add-port br1 tap0 -- set Interface tap0 type=internal
+      shell: ovs-vsctl --may-exist add-port br1 tap0 -- set Interface tap0 type=internal
       
 
     - name: Bring up tap0 interface
@@ -235,7 +235,7 @@
 
     - name: Retrieve IP address of sflow_machine
       set_fact:
-        sflow_ip: "{{ groups['sflow_machine'][0] }}"
+        sflow_ip: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
 
     - name: Debug - Print sflow_machine IP address
       debug:
@@ -245,12 +245,14 @@
 
     - name: Create sFlow agent on the OVS bridges on all the nodes in the Kubernetes Cluster
       become: yes
-      shell: ovs-vsctl -- --id=@sflow create sflow agent=tap0 target="{{sflow_ip}}\:6343" header=128 sampling=64 polling=10 -- set bridge br1 sflow=@sflow
+      shell: |
+        ovs-vsctl --if-exists clear bridge br1 sflow
+        ovs-vsctl -- --id=@sflow create sflow agent=tap0 target={{ sflow_ip }}:6343 header=128 sampling=64 polling=10 -- set bridge br1 sflow=@sflow
 
 
     - name: Retrieve IP address of onos_machine
       set_fact:
-        mininet_ip: "{{ groups['mininet_machine'][0] }}"
+        mininet_ip: "{{ hostvars[groups['onos_machine'][0]].internal_ip }}"
 
     - name: Debug - Print mininet_machine IP address
       debug:
@@ -259,7 +261,9 @@
 
     - name: Add port tap1 to bridge br1 with GRE tunnel to ONOS
       become: yes
-      command: ovs-vsctl add-port br1 tap1 -- set Interface tap1 type=gre options:remote_ip={{ mininet_ip }}
+      shell: |
+        ovs-vsctl --may-exist add-port br1 tap1
+        ovs-vsctl set interface tap1 type=gre options:remote_ip={{ mininet_ip }}
 
 
 
@@ -269,7 +273,7 @@
   tasks:
     - name: Retrieve IP address of tap0 in master node
       set_fact:
-        tap0_ip: "{{ groups['master_tap0'][0] }}"
+        tap0_ip: "{{ hostvars[groups['masters'][0]]['tap0_ip'] }}"
 
     - name: Debug - Print tap0 IP address including the subnet mask in master node
       debug:
@@ -277,7 +281,7 @@
 
     - name: Set IP address on tap0 interface
       become: yes
-      command: ip addr add {{tap0_ip}} dev tap0
+      command: ip addr replace {{tap0_ip}} dev tap0
 
     - name: Split tap0 ip address from the subnet mask to extract IP address
       set_fact:
@@ -312,7 +316,7 @@
   tasks:
     - name: Retrieve IP address of tap0 in worker1 node
       set_fact:
-        tap0_ip: "{{ groups['worker1_tap0'][0] }}"
+        tap0_ip: "{{ hostvars[groups['workers'][0]]['tap0_ip'] }}"
 
     - name: Debug - Print tap0 IP address including the subnet mask in worker1
       debug:
@@ -320,7 +324,7 @@
 
     - name: Set IP address on tap0 interface
       become: yes
-      command: ip addr add {{tap0_ip}} dev tap0
+      command: ip addr replace {{tap0_ip}} dev tap0
 
     - name: Split tap0 ip address from the subnet mask to extract IP address
       set_fact:
@@ -348,7 +352,7 @@
   tasks:
     - name: Retrieve IP address of tap0 in worker2 node
       set_fact:
-        tap0_ip: "{{ groups['worker2_tap0'][0] }}"
+        tap0_ip: "{{ hostvars[groups['workers'][1]]['tap0_ip'] }}"
 
     - name: Debug - Print tap0 IP address including the subnet mask in worker2
       debug:
@@ -369,7 +373,7 @@
 
     - name: Retrieve IP address of master node
       set_fact:
-        master_ip: "{{ hostvars['master']['ansible_host'] }}"
+        master_ip: "{{ hostvars[groups['masters'][0]]['internal_ip'] }}"
 
     - name: Debug - Print master node IP address
       debug:
@@ -381,7 +385,7 @@
 
 
 - name: Configure all Kubernetes nodes to send data to sFlow-RT collector
-  hosts: master
+  hosts: masters, workers
   tasks:
     - name: Create host-sflow.yml file
       ansible.builtin.template:
@@ -411,7 +415,7 @@
 
     - name: Retrieve IP address of tap0 in worker1 node
       set_fact:
-        tap0_ip_worker1: "{{ groups['worker1_tap0'][0] }}"
+        tap0_ip_worker1: "{{ hostvars[groups['workers'][0]]['tap0_ip'] }}"
 
 
     - name: Split tap0 ip address from the subnet mask to extract IP address
@@ -424,7 +428,7 @@
 
     - name: Retrieve IP address of tap0 in worker2 node
       set_fact:
-        tap0_ip_worker2: "{{ groups['worker2_tap0'][0] }}"
+        tap0_ip_worker2: "{{ hostvars[groups['workers'][1]]['tap0_ip'] }}"
 
 
     - name: Split tap0 ip address from the subnet mask to extract IP address
