@@ -240,7 +240,7 @@ spec:
           image: negin67/db:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5005
+            - containerPort: 5006
         - name: host-sflow-sidecar
           image: sflow/host-sflow:latest
           env:
@@ -267,6 +267,6 @@ spec:
     app: db
   ports:
     - protocol: TCP
-      port: 5005
-      targetPort: 5005
+      port: 5006
+      targetPort: 5006
   type: LoadBalancer
