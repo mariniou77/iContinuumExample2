@@ -5,25 +5,30 @@
 tmux new-session -d -s my_session
 
 # Run mininet topology
-tmux split-window -t my_session -h 'sudo mn --custom example.py,sflow-rt/extras/sflow.py --topo mytopo --mac --switch=ovs,protocols=OpenFlow13 --controller=remote,ip={{onos_ip}}'
+tmux split-window -t my_session -h "cd /home/antonios-icontinuum && sudo mn \
+  --custom /home/antonios-icontinuum/example.py,/home/antonios-icontinuum/sflow-rt/extras/sflow.py \
+  --topo mytopo --mac --switch=ovs,protocols=OpenFlow13 --controller=remote,ip={{ hostvars[groups['onos_machine'][0]].internal_ip }},port=6653"
 
 # Wait for a few seconds to ensure switches are up and running
-sleep 5
+sleep 30
 
 #Create gre tunnel between a mininet switch and kubernetes master/worker node
-echo "creating gre tunnel between a mininet switche and kubernetes master node"
-sudo ovs-vsctl add-port s1 int1 -- set Interface int1 type=gre options:remote_ip={{hostvars['master']['ansible_host']}}
+echo "creating gre tunnel between a mininet switch and kubernetes master node"
+sudo ovs-vsctl --may-exist add-port s1 int1
+sudo ovs-vsctl set interface int1 type=gre options:remote_ip={{hostvars['master']['internal_ip']}}
 echo ""
 
-sudo ovs-vsctl add-port s2 int2 -- set Interface int2 type=gre options:remote_ip={{hostvars['worker1']['ansible_host']}}
+sudo ovs-vsctl --may-exist add-port s2 int2
+sudo ovs-vsctl set interface int2 type=gre options:remote_ip={{hostvars['worker1']['internal_ip']}}
 echo ""
 
-sudo ovs-vsctl add-port s3 int3 -- set Interface int3 type=gre options:remote_ip={{hostvars['worker2']['ansible_host']}}
+sudo ovs-vsctl --may-exist add-port s3 int3
+sudo ovs-vsctl set Interface int3 type=gre options:remote_ip={{hostvars['worker2']['internal_ip']}}
 echo ""
 
 
 #Send data of the switch interface in the mininet to the monitoring tool (sFlow-RT)
 echo "sending data of the switch interface in the mininet to the monitoring tool (sFlow-RT)"
-sudo ovs-vsctl -- --id=@sflow create sflow agent=eno1 target="{{sflow_ip}}\:6343" header=128 sampling=64 polling=10 -- set bridge s1 sflow=@sflow
-sudo ovs-vsctl -- --id=@sflow create sflow agent=eno1 target="{{sflow_ip}}\:6343" header=128 sampling=64 polling=10 -- set bridge s2 sflow=@sflow
-sudo ovs-vsctl -- --id=@sflow create sflow agent=eno1 target="{{sflow_ip}}\:6343" header=128 sampling=64 polling=10 -- set bridge s3 sflow=@sflow
+sudo ovs-vsctl -- --id=@sflow create sflow agent=ens4 target="{{sflow_ip}}\:6343" header=128 sampling=64 polling=10 -- set bridge s1 sflow=@sflow
+sudo ovs-vsctl -- --id=@sflow create sflow agent=ens4 target="{{sflow_ip}}\:6343" header=128 sampling=64 polling=10 -- set bridge s2 sflow=@sflow
+sudo ovs-vsctl -- --id=@sflow create sflow agent=ens4 target="{{sflow_ip}}\:6343" header=128 sampling=64 polling=10 -- set bridge s3 sflow=@sflow
