@@ -36,4 +36,8 @@ The final adjustment was in `monitor.yml`. There I deleted dublicate installatio
 
 ## Next Steps
 
-After finishing with all the pre-running adjustments, I cloned the repo in the WSL.
+After finishing with all the pre-running adjustments, I cloned the repo in the WSL. Then, from inside the folder of the repo, I run the ansible command to start executing the playbooks: 
+
+```bash
+ansible-playbook -i Example2/inventory.ini main.yml -e "example_folder=Example2"
+```

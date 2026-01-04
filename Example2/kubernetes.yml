@@ -247,7 +247,7 @@
       become: yes
       shell: |
         ovs-vsctl --if-exists clear bridge br1 sflow
-        ovs-vsctl -- --id=@sflow create sflow agent=tap0 target={{ sflow_ip }}:6343 header=128 sampling=64 polling=10 -- set bridge br1 sflow=@sflow
+        ovs-vsctl -- --id=@sflow create sflow agent=tap0 targets="{{ sflow_ip }}:6343" header=128 sampling=64 polling=10 -- set bridge br1 sflow=@sflow
 
 
     - name: Retrieve IP address of onos_machine
