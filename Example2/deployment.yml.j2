@@ -25,7 +25,7 @@ spec:
           image: sflow/host-sflow:latest
           env:
             - name: COLLECTOR
-              value: {{ groups['sflow_machine'][0] }}
+              value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
             - name: NET
               value: host
           volumeMounts:
@@ -81,7 +81,7 @@ spec:
           image: sflow/host-sflow:latest
           env:
             - name: COLLECTOR
-              value: {{ groups['sflow_machine'][0] }}
+              value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
             - name: NET
               value: host
           volumeMounts:
@@ -136,7 +136,7 @@ spec:
           image: sflow/host-sflow:latest
           env:
             - name: COLLECTOR
-              value: {{ groups['sflow_machine'][0] }}
+              value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
             - name: NET
               value: host
           volumeMounts:
@@ -191,7 +191,7 @@ spec:
           image: sflow/host-sflow:latest
           env:
             - name: COLLECTOR
-              value: {{ groups['sflow_machine'][0] }}
+              value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
             - name: NET
               value: host
           volumeMounts:
@@ -245,7 +245,7 @@ spec:
           image: sflow/host-sflow:latest
           env:
             - name: COLLECTOR
-              value: {{ groups['sflow_machine'][0] }}
+              value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
             - name: NET
               value: host
           volumeMounts:
