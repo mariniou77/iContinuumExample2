@@ -324,6 +324,10 @@
 
     - name: Set IP address on tap0 interface
       become: yes
+      command: ip addr add {{tap0_ip}} dev tap0        
+
+    - name: Set IP address on tap0 interface
+      become: yes
       command: ip addr replace {{tap0_ip}} dev tap0
 
     - name: Split tap0 ip address from the subnet mask to extract IP address
@@ -385,17 +389,15 @@
 
 
 - name: Configure all Kubernetes nodes to send data to sFlow-RT collector
-  hosts: masters, workers
+  hosts: masters
   tasks:
     - name: Create host-sflow.yml file
       ansible.builtin.template:
         src: "{{ playbook_dir }}/../host-sflow.yml.j2"
         dest: "{{ user_home.stdout }}/host-sflow.yml"
-      vars:
-        user_home: "{{ lookup('env', 'HOME') }}"
 
     - name: Deploy host-sflow.yml file
-      shell: kubectl apply -f host-sflow.yml
+      shell: kubectl apply -f {{ user_home.stdout }}/host-sflow.yml
       become: yes
 
 
@@ -408,7 +410,7 @@
         user_home: "{{ lookup('env', 'HOME') }}"
 
     - name: Deploy deployment.yml file
-      shell: kubectl apply -f  deployment.yml
+      shell: kubectl apply -f {{ user_home.stdout }}/deployment.yml
       become: yes
 
 

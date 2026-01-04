@@ -31,8 +31,6 @@
         - curl
         - unzip
         - bzip2
-        - python2-dev
-        - python-setuptools
         - python3-dev
         - python3-setuptools
         - python3-pip
@@ -57,11 +55,6 @@
       get_url:
         url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
         dest: /tmp/get-pip.py
-      when: ansible_distribution_major_version|int == 16
-
-
-    - name: Install pip for Python 2
-      command: python2 /tmp/get-pip.py
       when: ansible_distribution_major_version|int == 16
 
 
@@ -189,13 +182,11 @@
       ansible.builtin.template:
         src: "{{ example_folder }}/example.py.j2"
         dest: "{{ user_home.stdout }}/example.py"
-      vars:
-        user_home: "{{ lookup('env', 'HOME') }}"
 
 
     - name: Debug - Print inventory file
       debug:
-        msg: "{{ lookup('file', '{{ example_folder }}/inventory.ini') }}"
+        msg: "{{ lookup('file', example_folder + '/inventory.ini') }}"
 
     - name: Retrieve IP address of onos_machine
       set_fact:
@@ -228,11 +219,9 @@
       ansible.builtin.template:
         src: "{{ example_folder }}/topology.sh.j2"
         dest: "{{ user_home.stdout }}/topology.sh"
-      vars:
-        user_home: "{{ lookup('env', 'HOME') }}"
 
     - name: Configure permission to the topology file
-      shell: chmod +x topology.sh
+      shell: "chmod +x {{ user_home.stdout }}/topology.sh"
 
 
     - name: Start topology in the background

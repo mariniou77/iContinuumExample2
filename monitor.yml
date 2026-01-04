@@ -37,8 +37,6 @@
         - curl
         - unzip
         - bzip2
-        - python2-dev
-        - python-setuptools
         - python3-dev
         - python3-setuptools
         - python3-pip
@@ -133,12 +131,7 @@
         url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
         dest: /tmp/get-pip.py
       when: ansible_distribution_major_version|int == 16
-
-
-    - name: Install pip for Python 2
-      command: python2 /tmp/get-pip.py
-      when: ansible_distribution_major_version|int == 16
-
+      
 
     - name: Update Package Manager
       command: sudo apt update
