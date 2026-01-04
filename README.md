@@ -29,3 +29,8 @@ The sixth adjustment was in `prometheus.yml.j2`. There I just adjusted the slow_
 ### Seventh adjustment
 
 The seventh adjustment was in `mininet.yml`. There I adjusted the IP variables pointing to the VMs. I also deleted the installation of Python because it was throwing an error and isntalled JAva 17 instead of 11 becas sflow was throwing an incopatible arror with Java 11
+
+## Final adjustment
+
+The final adjustment was in `monitor.yml`. There I deleted dublicate installation of sflow (because I install it through `mininet.yml` playbook). dditionally I cahnged the JAVA to 17 as previously.
+

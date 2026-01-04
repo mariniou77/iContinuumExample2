@@ -30,6 +30,7 @@
         - make
         - terminator
         - openjdk-11-jdk
+        - openjdk-17-jre-headless
         - git
         - git-review
         - zip
@@ -110,8 +111,8 @@
       lineinfile:
         dest: /etc/environment
         line: |
-          JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-          JRE_HOME=/usr/lib/jvm/java-11-openjdk-amd64/jre
+          JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          JRE_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 
     - name: Gather package facts
@@ -123,7 +124,7 @@
 
     - name: Install Python
       apt:
-        name: python
+        name: "{{ 'python' if 'python' in ansible_facts.packages else 'python-is-python3' }}"
         state: present
 
 
@@ -174,73 +175,6 @@
         portainer/portainer-ce:2.9.3
 
 
-
-    - name: Download sFlow-RT tarball
-      get_url:
-        url: http://www.inmon.com/products/sFlow-RT/sflow-rt.tar.gz
-        dest: "{{ user_home.stdout }}/sflow-rt.tar.gz"
-
-
-
-    - name: Create sFlow-RT directory
-      become: yes
-      file:
-        path: "{{ user_home.stdout }}/sflow-rt"
-        state: directory
-
-
-
-
-    - name: Extract sFlow-RT tarball
-      become: yes
-      unarchive:
-        src: "{{ user_home.stdout }}/sflow-rt.tar.gz"
-        dest: "{{ user_home.stdout }}/sflow-rt"
-        remote_src: yes
-        extra_opts: "--strip-components=1"
-
-
-
-    - name: Install required sFlow-RT applications
-      shell: "{{ user_home.stdout }}/sflow-rt/get-app.sh sflow-rt {{ item }}"
-      args:
-        chdir: "{{ user_home.stdout }}/sflow-rt"
-      loop:
-        - browse-metrics
-        - active-routes
-        - browse-drops
-        - browse-flows
-        - ddos-protect
-        - fabric-metrics
-        - ixp-metrics
-        - mininet-dashboard
-        - particle
-        - prometheus
-        - sflow-test
-        - sunburst
-        - topology
-        - trace-flow
-        - world-map
-        - dashboard-example
-
-    - name: Install Java
-      apt:
-        name: openjdk-11-jre-headless
-        state: present
-
-    - name: Debug - Before starting sFlow-RT
-      debug:
-        msg: "About to start sFlow-RT script"
-
-    - name: Start sFlow-RT in the background
-      shell: "nohup {{ user_home.stdout }}/sflow-rt/start.sh > /dev/null 2>&1 &"
-
-
-    - name: Debug - After starting sFlow-RT
-      debug:
-        msg: "sFlow-RT script started successfully"
-
-
     - name: Create a data directory
       file:
         path: "{{ item }}"
@@ -248,7 +182,6 @@
       with_items:
         - "{{ user_home.stdout }}/data"
    
-
 
     - name: Create prometheus.yml file
       ansible.builtin.template:
@@ -262,8 +195,6 @@
       shell: |
         sudo docker rm -f prometheus-sflow
         sudo docker run -d --user root --name prometheus-sflow --rm -v {{ user_home.stdout }}/data:/prometheus -v {{ user_home.stdout }}/prometheus.yml:/etc/prometheus/prometheus.yml -p 9090:9090 prom/prometheus
-
-
 
 
     - name: Install grafana as a container

@@ -151,6 +151,10 @@
         - world-map
         - dashboard-example
 
+    - name: Install Java
+      apt:
+        name: openjdk-17-jre-headless
+        state: present
 
     - name: Debug - Before starting sFlow-RT
       debug:
