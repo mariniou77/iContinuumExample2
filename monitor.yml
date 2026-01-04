@@ -131,7 +131,7 @@
         url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
         dest: /tmp/get-pip.py
       when: ansible_distribution_major_version|int == 16
-      
+
 
     - name: Update Package Manager
       command: sudo apt update
@@ -180,8 +180,6 @@
       ansible.builtin.template:
         src: prometheus.yml.j2
         dest: "{{ user_home.stdout }}/prometheus.yml"
-      vars:
-        user_home: "{{ lookup('env', 'HOME') }}"
 
 
     - name: Install prometheus as a container

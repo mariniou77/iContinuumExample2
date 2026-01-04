@@ -341,7 +341,7 @@
 
     - name: Retrieve IP address of master node
       set_fact:
-        master_ip: "{{ hostvars['master']['ansible_host'] }}"
+        master_ip: "{{ hostvars[groups['masters'][0]]['internal_ip'] }}"
 
     - name: Debug - Print master node IP address
       debug:
@@ -406,8 +406,6 @@
       ansible.builtin.template:
         src: deployment.yml.j2
         dest: "{{ user_home.stdout }}/deployment.yml"
-      vars:
-        user_home: "{{ lookup('env', 'HOME') }}"
 
     - name: Deploy deployment.yml file
       shell: kubectl apply -f {{ user_home.stdout }}/deployment.yml
