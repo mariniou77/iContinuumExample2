@@ -24,6 +24,7 @@
         - make
         - terminator
         - openjdk-11-jdk
+        - openjdk-17-jre-headless
         - git
         - git-review
         - zip
@@ -44,15 +45,13 @@
       lineinfile:
         dest: /etc/environment
         line: |
-          JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-          JRE_HOME=/usr/lib/jvm/java-11-openjdk-amd64/jre
-
+          JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          JRE_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
     - name: Install Python
       apt:
-        name: python
+        name: "{{ 'python' if 'python' in ansible_facts.packages else 'python-is-python3' }}"
         state: present
-
 
     - name: Download get-pip.py
       get_url:
@@ -88,8 +87,11 @@
         state: present
 
 
-    - name: Clone Mininet
-      command: git clone https://github.com/mininet/mininet /home/ubuntu/mininet
+    - name: Clone/Update Mininet
+      ansible.builtin.git:
+        repo: https://github.com/mininet/mininet
+        dest: "{{ user_home.stdout }}/mininet"
+        update: yes
 
 
     - name: Install Mininet
@@ -150,14 +152,16 @@
         - dashboard-example
 
 
-    - name: Install Java
-      apt:
-        name: openjdk-11-jre-headless
-        state: present
-
     - name: Debug - Before starting sFlow-RT
       debug:
         msg: "About to start sFlow-RT script"
+
+    - name: Stop any existing sFlow-RT
+      shell: pkill -f '[s]flowrt\.jar' || true
+      args:
+        executable: /bin/bash
+      failed_when: false
+      changed_when: false        
 
     - name: Start sFlow-RT in the background
       shell: "nohup {{ user_home.stdout }}/sflow-rt/start.sh > /dev/null 2>&1 &"
@@ -170,7 +174,7 @@
 
     - name: Retrieve IP address of sflow_machine
       set_fact:
-        sflow_ip: "{{ groups['sflow_machine'][0] }}"
+        sflow_ip: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
 
     - name: Debug - Print sflow_machine IP address
       debug:
@@ -191,7 +195,7 @@
 
     - name: Retrieve IP address of onos_machine
       set_fact:
-        onos_ip: "{{ groups['onos_machine'][0] }}"
+        onos_ip: "{{ hostvars[groups['onos_machine'][0]].internal_ip }}"
 
     - name: Debug - Print onos_machine IP address
       debug:
