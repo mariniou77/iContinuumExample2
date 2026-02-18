@@ -159,7 +159,7 @@ spec:
   ports:
     - protocol: TCP
       port: 8081
-      targetPort: 80
+      targetPort: 8080
   type: LoadBalancer
 
 
@@ -214,7 +214,7 @@ spec:
     - protocol: TCP
       port: 5004
       targetPort: 5004
-  type: LoadBalancer
+  type: ClusterIP
 
 
 
@@ -268,5 +268,5 @@ spec:
   ports:
     - protocol: TCP
       port: 5006
-      targetPort: 5006
+      targetPort: 5005
   type: LoadBalancer
