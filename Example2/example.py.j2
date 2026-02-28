@@ -1,24 +1,15 @@
 """Custom topology example2
 
-An example of 3 switch and 3 K3s hosts along with 2 mininet hosts:
+An example of 3 switches connected to each other.
+K3s hosts (master, worker1, worker2) connect via GRE tunnels
+configured in topology.sh.j2
 
 
-
-
-                                          k3s host      k3s host
-                                              |            |
-                                              |            |
-                                              |            |
-                           mininet host --- switch ----- switch --- mininet host
-                                               \         /
-                                                \       /
-                                                 \     /
-                                                  switch
-                                                    |
-                                                    |
-                                                    |
-                                                 k3s host
-
+                           switch ----- switch
+                               \         /
+                                \       /
+                                 \     /
+                                  switch
 
 
 Adding the 'topos' dict with a key/value pair to generate our newly defined
@@ -39,10 +30,7 @@ class MyTopo(Topo):
         s2 = self.addSwitch('s2')
         s3 = self.addSwitch('s3')
 
-
-        # Add links
-        self.addLink(h1, s1, cls=TCLink, bw=50, delay='5ms')
-        self.addLink(h2, s2, cls=TCLink, bw=50, delay='5ms')
+        # Add links between switches
         self.addLink(s1, s2, cls=TCLink, bw=50, delay='5ms')
         self.addLink(s1, s3, cls=TCLink, bw=50, delay='5ms')
         self.addLink(s2, s3, cls=TCLink, bw=50, delay='5ms')
