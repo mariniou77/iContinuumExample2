@@ -6,6 +6,19 @@
   become_method: sudo
   become_user: root
   tasks:
+    - name: Stop and disable firewalld (Chameleon KVM uses security groups)
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Restart Docker to rebuild iptables chains after firewalld removal
+      systemd:
+        name: docker
+        state: restarted
+      ignore_errors: yes
+
     - name: Update package lists
       apt:
         update_cache: yes
@@ -173,25 +186,12 @@
 
 
 
-    - name: Create ONOS directory
-      file:
-        path: "{{ user_home.stdout }}/onos"
-        state: directory
-
-
-
-    - name: Clone ONOS repository
-      shell: git clone https://github.com/opennetworkinglab/onos "{{ user_home.stdout }}/onos"
-      args:
-        chdir: "{{ user_home.stdout }}/onos"
-
-
-
-
-    - name: Checkout ONOS version
-      shell: git checkout 2.5.0
-      args:
-        chdir: "{{ user_home.stdout }}/onos"
+    - name: Clone ONOS repository at version 2.5.0
+      ansible.builtin.git:
+        repo: https://github.com/opennetworkinglab/onos
+        dest: "{{ user_home.stdout }}/onos"
+        version: "2.5.0"
+        update: no
 
 
 
@@ -211,6 +211,8 @@
         wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64
         chmod +x bazelisk-linux-amd64
         sudo mv bazelisk-linux-amd64 "{{ user_home.stdout }}/onos/bazel"
+      args:
+        creates: "{{ user_home.stdout }}/onos/bazel"
 
 
 
@@ -231,6 +233,8 @@
         cd "{{ user_home.stdout }}/Downloads"
         wget http://archive.apache.org/dist/karaf/3.0.5/apache-karaf-3.0.5.tar.gz
         tar -zxvf apache-karaf-3.0.5.tar.gz -C "{{ user_home.stdout }}/Applications/"
+      args:
+        creates: "{{ user_home.stdout }}/Applications/apache-karaf-3.0.5"
 
 
 
@@ -240,6 +244,8 @@
         cd "{{ user_home.stdout }}/Downloads"
         wget http://archive.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
         tar -zxvf apache-maven-3.3.9-bin.tar.gz -C "{{ user_home.stdout }}/Applications/"
+      args:
+        creates: "{{ user_home.stdout }}/Applications/apache-maven-3.3.9"
 
 
 
@@ -251,6 +257,8 @@
          bazel version
          bazel build onos
          cd "{{ user_home.stdout }}"
+      args:
+        creates: "{{ user_home.stdout }}/onos/bazel-bin"
 
 
 

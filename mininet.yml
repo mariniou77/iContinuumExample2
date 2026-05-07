@@ -38,6 +38,8 @@
         - default-jdk
         - python3
         - snapd
+        - openvswitch-switch
+        - openvswitch-common
 
     - name: Add Java environment variables
       lineinfile:

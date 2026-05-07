@@ -4,6 +4,13 @@
   hosts: master,workers
   become: true
   tasks:
+    - name: Stop and disable firewalld (Chameleon KVM uses security groups)
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
     - name: Update package lists
       apt:
         update_cache: yes
@@ -187,19 +194,6 @@
         append: yes
       become: true
 
-    - name: Allow incoming traffic to port 6443
-      ufw:
-        rule: allow
-        port: 6443
-        proto: tcp
-      become: true
-
-    - name: Allow incoming traffic to port 443
-      ufw:
-        rule: allow
-        port: 443
-        proto: tcp
-      become: true
 
 
     - name: Install openvswitch-switch package
@@ -295,7 +289,7 @@
 
 
     - name: Executing the command
-      shell: curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip={{tap0_ip_address}} --flannel-iface=tap0" sh -
+      shell: curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip={{tap0_ip_address}} --flannel-iface=tap0 --flannel-backend=host-gw --tls-san={{tap0_ip_address}} --advertise-address={{hostvars['master']['internal_ip']}}" sh -
 
     - name: Retrieve K3s node token
       command: "sudo cat /var/lib/rancher/k3s/server/node-token"
@@ -424,6 +418,7 @@
 
     - name: Execute ping command
       shell: ping -c 2 {{tap0_ip_address_worker1}}
+      ignore_errors: yes
 
 
     - name: Retrieve IP address of tap0 in worker2 node
@@ -435,6 +430,7 @@
       set_fact:
         tap0_ip_address_worker2: "{{ tap0_ip_worker2.split('/')[0] }}"
 
-    
+
     - name: Execute ping command
       shell: ping -c 2 {{tap0_ip_address_worker2}}
+      ignore_errors: yes

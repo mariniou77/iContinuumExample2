@@ -1,0 +1,110 @@
+---
+- name: Setup LLM Server
+  hosts: llm_machine
+  become: yes
+
+  handlers:
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: Restart Ollama
+      systemd:
+        name: ollama
+        state: restarted
+
+  tasks:
+    # --- System prep ---
+    - name: Stop and disable firewalld (Chameleon KVM uses security groups)
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Update package cache
+      apt:
+        update_cache: yes
+
+    - name: Install linux-headers and build tools
+      apt:
+        name:
+          - "linux-headers-{{ ansible_kernel }}"
+          - build-essential
+          - curl
+          - wget
+          - software-properties-common
+          - ubuntu-drivers-common
+        state: present
+
+    # --- NVIDIA drivers ---
+    # Chameleon KVM vGPU requires the proprietary driver, not the open
+    # kernel module (ubuntu-drivers autoinstall picks -open which fails).
+    - name: Install proprietary NVIDIA driver 550
+      apt:
+        name: nvidia-driver-550
+        state: present
+
+    - name: Verify NVIDIA driver (may require reboot if just installed)
+      command: nvidia-smi
+      register: nvidia_smi_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Print nvidia-smi output
+      debug:
+        var: nvidia_smi_check.stdout_lines
+
+    # --- Ollama installation ---
+    - name: Download and install Ollama
+      shell: curl -fsSL https://ollama.com/install.sh | sh
+      args:
+        creates: /usr/local/bin/ollama
+
+    - name: Ensure Ollama systemd service file exists
+      wait_for:
+        path: /etc/systemd/system/ollama.service
+        timeout: 30
+
+    - name: Configure Ollama to listen on all interfaces (not just localhost)
+      lineinfile:
+        path: /etc/systemd/system/ollama.service
+        insertafter: '^\[Service\]'
+        line: 'Environment="OLLAMA_HOST=0.0.0.0:11434"'
+        regexp: 'OLLAMA_HOST'
+      notify:
+        - Reload systemd
+        - Restart Ollama
+
+    - name: Flush handlers (apply systemd reload and restart now)
+      meta: flush_handlers
+
+    - name: Enable and start Ollama service
+      systemd:
+        name: ollama
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Wait for Ollama API to be ready
+      wait_for:
+        host: localhost
+        port: 11434
+        delay: 5
+        timeout: 60
+
+    # --- Pull model ---
+    - name: Pull qwen3.5:4b model (may take several minutes on first run)
+      shell: ollama pull qwen3.5:4b
+      environment:
+        HOME: "/home/cc"
+      timeout: 900
+
+    - name: Verify model is available
+      shell: ollama list
+      register: ollama_list
+      changed_when: false
+
+    - name: Print available models
+      debug:
+        var: ollama_list.stdout_lines

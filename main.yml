@@ -15,5 +15,7 @@
   import_playbook: "{{ example_folder }}/kubernetes.yml"
 
 
+- name: Setup LLM Server (NVIDIA drivers, Ollama, qwen3.5:4b)
+  import_playbook: llm_server.yml
 
 # Add more tasks to include more playbook
