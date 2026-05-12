@@ -219,7 +219,11 @@
     - name: Add port tap0 to bridge br1
       become: yes
       shell: ovs-vsctl --may-exist add-port br1 tap0 -- set Interface tap0 type=internal
-      
+
+
+    - name: Set tap0 MTU to 1400 (Chameleon ens3=1450 minus 38 B OVS gretap overhead minus 12 B safety)
+      become: yes
+      shell: ovs-vsctl set Interface tap0 mtu_request=1400
 
     - name: Bring up tap0 interface
       become: yes
@@ -259,6 +263,44 @@
         ovs-vsctl --may-exist add-port br1 tap1
         ovs-vsctl set interface tap1 type=gre options:remote_ip={{ mininet_ip }}
 
+
+    # --- TCPMSS clamp for the GRE overlay (MTU mitigation) ---
+    # Pods created before cni0=1400 keep eth0 MTU=1450 and would send oversized
+    # segments through tap0(1400). The FORWARD-chain MSS clamp rewrites every
+    # TCP SYN to fit the path. Combined with tap0 mtu_request=1400, this makes
+    # large POSTs (e.g. the 42KB image chain) succeed without restarting pods.
+    - name: Preseed iptables-persistent (skip interactive autosave prompts)
+      become: yes
+      shell: |
+        echo iptables-persistent iptables-persistent/autosave_v4 boolean false | debconf-set-selections
+        echo iptables-persistent iptables-persistent/autosave_v6 boolean false | debconf-set-selections
+
+    - name: Install iptables-persistent
+      become: yes
+      apt:
+        name: iptables-persistent
+        state: present
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Add TCPMSS clamp rule on FORWARD chain (idempotent)
+      become: yes
+      ansible.builtin.iptables:
+        table: mangle
+        chain: FORWARD
+        protocol: tcp
+        match: [tcp]
+        tcp_flags:
+          flags: SYN,RST
+          flags_set: SYN
+        jump: TCPMSS
+        clamp_mss_to_pmtu: yes
+        action: insert
+        comment: "Clamp MSS to PMTU through GRE overlay"
+
+    - name: Persist iptables rules to /etc/iptables/rules.v4
+      become: yes
+      shell: iptables-save > /etc/iptables/rules.v4
 
 
 
