@@ -40,9 +40,9 @@
     # --- NVIDIA drivers ---
     # Chameleon KVM vGPU requires the proprietary driver, not the open
     # kernel module (ubuntu-drivers autoinstall picks -open which fails).
-    - name: Install proprietary NVIDIA driver 550
+    - name: Install proprietary NVIDIA driver 550-server (PCIe passthrough)
       apt:
-        name: nvidia-driver-550
+        name: nvidia-driver-550-server
         state: present
 
     - name: Verify NVIDIA driver (may require reboot if just installed)

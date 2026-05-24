@@ -285,18 +285,11 @@
 
     - name: Add TCPMSS clamp rule on FORWARD chain (idempotent)
       become: yes
-      ansible.builtin.iptables:
-        table: mangle
-        chain: FORWARD
-        protocol: tcp
-        match: [tcp]
-        tcp_flags:
-          flags: SYN,RST
-          flags_set: SYN
-        jump: TCPMSS
-        clamp_mss_to_pmtu: yes
-        action: insert
-        comment: "Clamp MSS to PMTU through GRE overlay"
+      shell: |
+        iptables -t mangle -C FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || \
+        iptables -t mangle -I FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+      args:
+        executable: /bin/bash
 
     - name: Persist iptables rules to /etc/iptables/rules.v4
       become: yes
@@ -427,6 +420,10 @@
 - name: Configure all Kubernetes nodes to send data to sFlow-RT collector
   hosts: masters
   tasks:
+    - name: Get home directory of the user
+      shell: "getent passwd {{ ansible_user }} | cut -d: -f6"
+      register: user_home
+
     - name: Create host-sflow.yml file
       ansible.builtin.template:
         src: "{{ playbook_dir }}/../host-sflow.yml.j2"
@@ -476,3 +473,53 @@
     - name: Execute ping command
       shell: ping -c 2 {{tap0_ip_address_worker2}}
       ignore_errors: yes
+
+
+
+- name: Restart K3s on master to trigger Flannel route programming
+  hosts: master
+  become: true
+  tasks:
+    - name: Restart k3s server
+      systemd:
+        name: k3s
+        state: restarted
+
+    - name: Wait for K3s API server to be ready
+      wait_for:
+        host: 192.168.100.100
+        port: 6443
+        delay: 10
+        timeout: 90
+
+    - name: Wait for all nodes to be Ready
+      shell: kubectl get nodes --no-headers 2>/dev/null | grep -c " Ready"
+      register: ready_count
+      until: ready_count.stdout | int >= 3
+      retries: 15
+      delay: 10
+
+
+- name: Restart K3s agent on workers to sync Flannel routes
+  hosts: workers
+  become: true
+  tasks:
+    - name: Restart k3s-agent
+      systemd:
+        name: k3s-agent
+        state: restarted
+
+    - name: Wait for k3s-agent to reconnect
+      wait_for:
+        timeout: 30
+
+
+- name: Verify Flannel pod-CIDR routes on all nodes
+  hosts: master,workers
+  become: true
+  tasks:
+    - name: Check Flannel routes are present
+      shell: ip route show | grep -c "10.42"
+      register: route_count
+      failed_when: route_count.stdout | int < 2
+      changed_when: false

@@ -291,5 +291,19 @@
 
 
 
+    - name: Wait for ONOS REST API to be ready (up to 3 minutes)
+      wait_for:
+        host: localhost
+        port: 8181
+        delay: 15
+        timeout: 180
+
+    - name: Wait for ONOS OpenFlow controller port to be ready
+      wait_for:
+        host: localhost
+        port: 6653
+        delay: 5
+        timeout: 60
+
     - name: login to onos CLI
       shell: sshpass -p 'karaf' ssh -p 8101 -o StrictHostKeyChecking=no karaf@{{ onos_ip }} &
