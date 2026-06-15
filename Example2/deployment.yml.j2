@@ -25,6 +25,13 @@ spec:
             - containerPort: 5001
         - name: host-sflow-sidecar
           image: sflow/host-sflow:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           env:
             - name: COLLECTOR
               value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
@@ -83,6 +90,13 @@ spec:
             - containerPort: 5002
         - name: host-sflow-sidecar
           image: sflow/host-sflow:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           env:
             - name: COLLECTOR
               value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
@@ -140,6 +154,13 @@ spec:
             - containerPort: 80
         - name: host-sflow-sidecar
           image: sflow/host-sflow:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           env:
             - name: COLLECTOR
               value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
@@ -197,6 +218,13 @@ spec:
             - containerPort: 5004
         - name: host-sflow-sidecar
           image: sflow/host-sflow:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           env:
             - name: COLLECTOR
               value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
@@ -253,6 +281,13 @@ spec:
             - containerPort: 5006
         - name: host-sflow-sidecar
           image: sflow/host-sflow:latest
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           env:
             - name: COLLECTOR
               value: "{{ hostvars[groups['sflow_machine'][0]].internal_ip }}"
