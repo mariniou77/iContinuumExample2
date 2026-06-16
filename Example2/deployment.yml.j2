@@ -279,6 +279,17 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5006
+          resources:
+            # Raised to 1Gi ceiling after db nginx OOM-killed at 512Mi during the
+            # multi-hour VPA campaign (2026-06-16). The OOM bumped RESTARTS to 1, which
+            # also tripped the placement-check parser (now fixed). db logs every request +
+            # per-request timing, so memory grows over a long-lived pod — give it headroom.
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1024Mi
         - name: host-sflow-sidecar
           image: sflow/host-sflow:latest
           resources:
